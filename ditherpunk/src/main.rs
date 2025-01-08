@@ -1,5 +1,6 @@
 use argh::FromArgs;
 use image::{DynamicImage, ImageError, RgbImage};
+use image::io::Reader as ImageReader;
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
 /// Convertit une image en monochrome ou vers une palette réduite de couleurs.
@@ -54,5 +55,6 @@ const CYAN: image::Rgb<u8> = image::Rgb([0, 255, 255]);
 fn main() -> Result<(), ImageError>{
     let args: DitherArgs = argh::from_env();
     let path_in = args.input;
+    let img = ImageReader::open(path_in)?.decode()?;;
     Ok(())
 }
