@@ -45,3 +45,7 @@ let rgb_image = img.to_rgb8();
 
 Si l'image avait déjà un canal alpha au départ, sachant que png est un format qui comporte déjà un canal alpha, elle ne sera donc pas modifée, de plus, l'utilisation du type <code>DynamicImage</code> prend déjà en charge ce genre de problématiques.
 
+## Question 4
+
+La couleur du pixel (32, 52) est : Rgb([8, 8, 8]).
+
