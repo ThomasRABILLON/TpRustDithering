@@ -1,5 +1,5 @@
 use argh::FromArgs;
-use image::ImageError;
+use image::{DynamicImage, ImageError};
 use image::io::Reader as ImageReader;
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -52,16 +52,21 @@ const YELLOW: image::Rgb<u8> = image::Rgb([255, 255, 0]);
 const MAGENTA: image::Rgb<u8> = image::Rgb([255, 0, 255]);
 const CYAN: image::Rgb<u8> = image::Rgb([0, 255, 255]);
 
-fn type_of<T>(_: &T) -> &'static str {
-    std::any::type_name::<T>()
+fn white_pixel_1_out_of_2(rgb_image: &mut image::RgbImage) {
+    for (x, _, pixel) in rgb_image.enumerate_pixels_mut() {
+        if x % 2 == 0 {
+            *pixel = WHITE;
+        }
+    }
+    rgb_image.save_with_format("./output/1_pixel_blanc_sur_2.png", image::ImageFormat::Png).unwrap();
 }
 
 fn main() -> Result<(), ImageError>{
     let args: DitherArgs = argh::from_env();
     let path_in = args.input;
-    let img = ImageReader::open(path_in)?.decode()?;
+    let img:DynamicImage = ImageReader::open(path_in)?.decode()?;
     let rgb_image = img.to_rgb8();
-    rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
+    
 
     // Coordonnées du pixel (32, 52)
     let x = 32;
@@ -76,5 +81,12 @@ fn main() -> Result<(), ImageError>{
         println!("Coordonnées ({}, {}) hors de l'image (dimensions : {}x{}).", 
                  x, y, rgb_image.width(), rgb_image.height());
     }
+
+    //on boucle sur chaque pixel de l'image
+    white_pixel_1_out_of_2(&mut rgb_image.clone());
+    
+    //on sauvegarde l'image modifiée
+    rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
+
     Ok(())
 }
