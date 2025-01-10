@@ -43,3 +43,6 @@ let rgb_image = img.to_rgb8();
 
 *Sauver l’image obtenue au format png. Que se passe-t-il si l’image de départ avait un canal alpha?*
 
+## Question 4
+
+La couleur du pixel (32, 52) est : Rgb([8, 8, 8]).
