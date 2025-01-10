@@ -58,5 +58,19 @@ fn main() -> Result<(), ImageError>{
     let img = ImageReader::open(path_in)?.decode()?;
     let rgb_image = img.to_rgb8();
     rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
+
+    // Coordonnées du pixel (32, 52)
+    let x = 32;
+    let y = 52;
+
+    // Vérifie si les coordonnées sont valides
+    if x < rgb_image.width() && y < rgb_image.height() {
+        // Récupère la couleur du pixel
+        let pixel = rgb_image.get_pixel(x, y);
+        println!("La couleur du pixel ({}, {}) est : {:?}", x, y, pixel);
+    } else {
+        println!("Coordonnées ({}, {}) hors de l'image (dimensions : {}x{}).", 
+                 x, y, rgb_image.width(), rgb_image.height());
+    }
     Ok(())
 }
