@@ -43,3 +43,5 @@ let rgb_image = img.to_rgb8();
 
 *Sauver l’image obtenue au format png. Que se passe-t-il si l’image de départ avait un canal alpha?*
 
+Si l'image avait déjà un canal alpha au départ, sachant que png est un format qui comporte déjà un canal alpha, elle ne sera donc pas modifée, de plus, l'utilisation du type <code>DynamicImage</code> prend déjà en charge ce genre de problématiques.
+

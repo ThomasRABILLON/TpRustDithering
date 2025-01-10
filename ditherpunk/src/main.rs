@@ -1,5 +1,5 @@
 use argh::FromArgs;
-use image::{DynamicImage, ImageError, RgbImage};
+use image::ImageError;
 use image::io::Reader as ImageReader;
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -51,6 +51,10 @@ const GREEN: image::Rgb<u8> = image::Rgb([0, 255, 0]);
 const YELLOW: image::Rgb<u8> = image::Rgb([255, 255, 0]);
 const MAGENTA: image::Rgb<u8> = image::Rgb([255, 0, 255]);
 const CYAN: image::Rgb<u8> = image::Rgb([0, 255, 255]);
+
+fn type_of<T>(_: &T) -> &'static str {
+    std::any::type_name::<T>()
+}
 
 fn main() -> Result<(), ImageError>{
     let args: DitherArgs = argh::from_env();
