@@ -61,6 +61,28 @@ fn white_pixel_1_out_of_2(rgb_image: &mut image::RgbImage) {
     rgb_image.save_with_format("./output/1_pixel_blanc_sur_2.png", image::ImageFormat::Png).unwrap();
 }
 
+fn get_luminance(pixel: &image::Rgb<u8>) -> f32 {
+    let r = pixel[0] as f32;
+    let g = pixel[1] as f32;
+    let b = pixel[2] as f32;
+    
+    0.299 * r + 0.587 * g + 0.114 * b
+}
+fn apply_threshold_seuillage(rgb_image: &mut image::RgbImage) {
+    for (x, y, pixel) in rgb_image.enumerate_pixels_mut() {
+        let luminance = get_luminance(pixel);
+        
+        if luminance > 127.5 {
+            *pixel = WHITE;
+        } else {
+            *pixel = BLACK;
+        }
+    }
+    rgb_image.save_with_format("./output/output_monochrome.png", image::ImageFormat::Png).unwrap();
+}
+
+
+
 fn main() -> Result<(), ImageError>{
     let args: DitherArgs = argh::from_env();
     let path_in = args.input;
@@ -87,6 +109,12 @@ fn main() -> Result<(), ImageError>{
     
     //on sauvegarde l'image modifiée
     rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
+
+    // Appliquer le traitement de seuillage
+    apply_threshold_seuillage(&mut rgb_image.clone());
+
+    // Sauvegarder l'image traitée
+    // rgb_image.save_with_format("./output/output_monochrome.png", image::ImageFormat::Png)?;
 
     Ok(())
 }
