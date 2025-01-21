@@ -49,3 +49,17 @@ Si l'image avait déjà un canal alpha au départ, sachant que png est un format
 
 La couleur du pixel (32, 52) est : Rgb([8, 8, 8]).
 
+## Question 6
+
+D'apres [nos recherches](https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color) la formule pour caluler la luminosité d'un pixel est :
+
+```rust
+(0.2126*R + 0.7152*G + 0.0722*B)
+```
+
+## Question 7
+
+Voici le resultat :
+
+![image monochrome](./ditherpunk/output/output_monochrome.png)
+
