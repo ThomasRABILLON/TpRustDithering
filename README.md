@@ -2,7 +2,7 @@
 
 ## Question 1
 
-<i>Créer un nouveau projet Cargo, avec une dépendance sur la bibliothèque image, version 0.24.</i>
+*Créer un nouveau projet Cargo, avec une dépendance sur la bibliothèque image, version 0.24.*
 
 ```bash
 cargo new ditherpunk
@@ -47,5 +47,12 @@ Si l'image avait déjà un canal alpha au départ, sachant que png est un format
 
 ## Question 4
 
+*Afficher dans le terminal la couleur du pixel (32, 52) de l’image de votre choix.*
+
 La couleur du pixel (32, 52) est : Rgb([8, 8, 8]).
 
+## Question 5
+
+*Passer un pixel sur deux d’une image en blanc. Est-ce que l’image obtenue est reconnaissable?*
+
+Oui, l'image est reconnaissable : ![img 1sur2](./ditherpunk/output/1_pixel_blanc_sur_2.png)
