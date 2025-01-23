@@ -63,3 +63,11 @@ Voici le resultat :
 
 ![image monochrome](./ditherpunk/output/output_monochrome.png)
 
+## Exercice 8
+
+Nous pouvons lancer le traitement monochrome avec des couleurs de notre choix avec la commande suivante:
+
+```bash
+cargo run ./img/image_iut.jpg -- couleurs --couleurs "WHITE,BLUE"
+# Le nom des couleurs doit être en majuscule et en anglais (BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, GREY)
+```
