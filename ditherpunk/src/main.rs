@@ -125,7 +125,7 @@ fn apply_distance_eucli(rgb_image: &mut image::RgbImage, palette: Vec<image::Rgb
             }
         }
         *pixel = closest_color;
-    }    .unwrap();
+    }
 }
 
 fn white_pixel_1_out_of_2(rgb_image: &mut image::RgbImage) {
