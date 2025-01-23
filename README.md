@@ -210,6 +210,13 @@ Après avoir implémenté la diffusion d'erreur avec la matrice de Floyd-Steinbe
 
 ![diffusion erreur floyd-steinberg](./ditherpunk/output/question19.png)
 
+## Question 21
+
+Pour lancer notre commande d'aide, vueillez utiliser la commande suivante :
+```bash
+cargo run ./img/image_iut.jpg -- aide
+```
+
 ## Question 22
 
 Le type Rust correspondant à une sélection d’options fournies par l’utilisateur est, en reprenant le squelette qui nous était donné, **`DitherArgs`**, qui dérive le type **`FromArgs`** de la bibliothèque **`argh`**.
