@@ -103,3 +103,24 @@ cargo run ./img/image_iut.jpg -- palette --n-couleurs 8
 ```
 
 Nous obtenons le résultat suivant : ![image_palette](./ditherpunk/output/output_palette.png)
+
+## Question 11
+
+Nous avons implémenter le tramage aléatoire de la manière suivante :
+```rust
+fn tramage_aleatoire(rgb_image: &mut image::RgbImage) {
+    let mut rng = rand::thread_rng();
+    let mut random = 0;
+    for (x, y, pixel) in rgb_image.enumerate_pixels_mut() {
+        random = rng.gen_range(0..255);
+        if get_luminance(pixel) > random as f32 {
+            *pixel = WHITE;
+        } else {
+            *pixel = BLACK;
+        }
+    }
+    rgb_image
+        .save_with_format("./output/output_tramage_aleatoire.png", image::ImageFormat::Png)
+        .unwrap();
+}
+```

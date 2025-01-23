@@ -1,6 +1,7 @@
 use argh::FromArgs;
 use image::io::Reader as ImageReader;
 use image::{DynamicImage, ImageError};
+use rand::Rng;
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
 /// Convertit une image en monochrome ou vers une palette réduite de couleurs.
@@ -126,6 +127,22 @@ fn apply_threshold_seuillage(rgb_image: &mut image::RgbImage, couleur1: image::R
         .unwrap();
 }
 
+fn tramage_aleatoire(rgb_image: &mut image::RgbImage) {
+    let mut rng = rand::thread_rng();
+    let mut random = 0;
+    for (x, y, pixel) in rgb_image.enumerate_pixels_mut() {
+        random = rng.gen_range(0..255);
+        if get_luminance(pixel) > random as f32 {
+            *pixel = WHITE;
+        } else {
+            *pixel = BLACK;
+        }
+    }
+    rgb_image
+        .save_with_format("./output/output_tramage_aleatoire.png", image::ImageFormat::Png)
+        .unwrap();
+}
+
 fn main() -> Result<(), ImageError> {
     let args: DitherArgs = argh::from_env();
     let path_in = args.input;
@@ -202,6 +219,8 @@ fn main() -> Result<(), ImageError> {
             apply_distance_eucli(&mut rgb_image.clone(), palette[..opts.n_couleurs].to_vec());
         }
     }
+
+    tramage_aleatoire(&mut rgb_image.clone());
 
     Ok(())
 }
