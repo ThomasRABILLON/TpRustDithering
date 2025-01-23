@@ -28,6 +28,7 @@ enum Mode {
     DiffusionErreurMonochrome(OptsDiffusionErreur),
     DiffusionErreurPalette(OptsDiffusionErreurPalette),
     DiffusionErreurFloydSteinberg(OptsDiffusionErreurFloydSteinberg),
+    Aide(OptsAide),
 }
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -88,6 +89,13 @@ struct OptsDiffusionErreurPalette {
 /// Diffusion d'erreur avec la méthode Floyd-Steinberg.
 struct OptsDiffusionErreurFloydSteinberg {
     // Aucune option particulière ici
+}
+
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="aide")]
+/// Affiche un écran d'aide détaillé pour les différentes commandes.
+struct OptsAide {
+    // Aucun paramètre requis pour cette commande
 }
 
 const WHITE: image::Rgb<u8> = image::Rgb([255, 255, 255]);
@@ -336,11 +344,39 @@ fn parse_couleur(couleur: &str) -> Option<image::Rgb<u8>> {
     }
 }
 
+fn afficher_aide() {
+    println!(
+        "
+Écran d'aide :
+- seuil : Convertit une image en monochrome en utilisant un seuil de luminance.
+  Exemple : cargo run -- seuil --seuil 127.5 --couleur1 RED --couleur2 BLACK
+  
+- palette : Réduit une image à un nombre limité de couleurs dans une palette.
+  Exemple : cargo run -- palette --n-couleurs 4
+
+- bayer : Applique un tramage ordonné basé sur une matrice de Bayer.
+  Exemple : cargo run -- bayer --ordre 3
+
+- diffusion_erreur_monochrome : Applique une diffusion d'erreur en monochrome.
+  Exemple : cargo run -- diffusion_erreur_monochrome
+
+- diffusion_erreur_palette : Applique une diffusion d'erreur en utilisant une palette réduite.
+  Exemple : cargo run -- diffusion_erreur_palette --n-couleurs 4
+
+- diffusion_erreur_floyd_steinberg : Applique une diffusion d'erreur avec l'algorithme Floyd-Steinberg.
+  Exemple : cargo run -- diffusion_erreur_floyd_steinberg
+
+- aide : Affiche cet écran d'aide détaillé.
+  Exemple : cargo run -- help
+"
+    );
+}
+
 fn main() -> Result<(), ImageError> {
     let args: DitherArgs = argh::from_env();
 
     let path_in = args.input;
-    let mut img: DynamicImage = ImageReader::open(path_in)?.decode()?;
+    let  img: DynamicImage = ImageReader::open(path_in)?.decode()?;
     let mut rgb_image = img.to_rgb8();
     
     let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA];
@@ -366,11 +402,14 @@ fn main() -> Result<(), ImageError> {
             diffusion_erreur_monochrome(&mut rgb_image);
         }
         Mode::DiffusionErreurPalette(_) => {
-            let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA];
             diffusion_erreur_palette(&mut rgb_image, palette);
         }
         Mode::DiffusionErreurFloydSteinberg(_) => {
             diffusion_erreur_floyd_steinberg(&mut rgb_image);
+        }
+        Mode::Aide(_) => {
+            afficher_aide();
+            return Ok(());
         }
     }
 
@@ -380,4 +419,3 @@ fn main() -> Result<(), ImageError> {
     println!("Traitement terminé. Résultat enregistré dans {}", output_path);
     Ok(())
 }
-
