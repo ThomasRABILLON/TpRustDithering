@@ -13,9 +13,10 @@ struct DitherArgs {
     /// le fichier de sortie (optionnel)
     #[argh(positional)]
     output: Option<String>,
+
     /// le mode d’opération
     #[argh(subcommand)]
-    mode: Mode
+    mode: Mode,
 }
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -23,7 +24,10 @@ struct DitherArgs {
 enum Mode {
     Seuil(OptsSeuil),
     Palette(OptsPalette),
-    Bayer(OptsBayer)
+    Bayer(OptsBayer),
+    DiffusionErreurMonochrome(OptsDiffusionErreur),
+    DiffusionErreurPalette(OptsDiffusionErreurPalette),
+    DiffusionErreurFloydSteinberg(OptsDiffusionErreurFloydSteinberg),
 }
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -40,7 +44,7 @@ struct OptsSeuil {
 
     /// couleur pour les pixels dont la luminance est inférieure ou égale au seuil
     #[argh(option)]
-    couleur2: String
+    couleur2: String,
 }
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -50,7 +54,7 @@ struct OptsPalette {
 
     /// le nombre de couleurs à utiliser, dans la liste [NOIR, BLANC, ROUGE, VERT, BLEU, JAUNE, CYAN, MAGENTA]
     #[argh(option)]
-    n_couleurs: usize
+    n_couleurs: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -59,7 +63,31 @@ struct OptsPalette {
 struct OptsBayer {
     /// ordre de la matrice de Bayer
     #[argh(option)]
-    ordre: u32
+    ordre: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="diffusion_erreur_monochrome")]
+/// Diffusion d'erreur pour un rendu monochrome.
+struct OptsDiffusionErreur {
+    // Aucun paramètre spécifique à cette méthode de diffusion pour l'instant
+}
+
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="diffusion_erreur_palette")]
+/// Diffusion d'erreur pour un rendu utilisant une palette réduite de couleurs.
+struct OptsDiffusionErreurPalette {
+
+    /// le nombre de couleurs à utiliser, dans la liste [NOIR, BLANC, ROUGE, VERT, BLEU, JAUNE, CYAN, MAGENTA]
+    #[argh(option)]
+    n_couleurs: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="diffusion_erreur_floyd_steinberg")]
+/// Diffusion d'erreur avec la méthode Floyd-Steinberg.
+struct OptsDiffusionErreurFloydSteinberg {
+    // Aucune option particulière ici
 }
 
 const WHITE: image::Rgb<u8> = image::Rgb([255, 255, 255]);
@@ -97,10 +125,7 @@ fn apply_distance_eucli(rgb_image: &mut image::RgbImage, palette: Vec<image::Rgb
             }
         }
         *pixel = closest_color;
-    }
-    rgb_image
-        .save_with_format("./output/output_palette.png", image::ImageFormat::Png)
-        .unwrap();
+    }    .unwrap();
 }
 
 fn white_pixel_1_out_of_2(rgb_image: &mut image::RgbImage) {
@@ -109,9 +134,6 @@ fn white_pixel_1_out_of_2(rgb_image: &mut image::RgbImage) {
             *pixel = WHITE;
         }
     }
-    rgb_image
-        .save_with_format("./output/1_pixel_blanc_sur_2.png", image::ImageFormat::Png)
-        .unwrap();
 }
 
 fn get_luminance(pixel: &image::Rgb<u8>) -> f32 {
@@ -132,9 +154,6 @@ fn apply_threshold_seuillage(rgb_image: &mut image::RgbImage, couleur1: image::R
             *pixel = couleur2;
         }
     }
-    rgb_image
-        .save_with_format("./output/output_monochrome.png", image::ImageFormat::Png)
-        .unwrap();
 }
 
 fn tramage_aleatoire(rgb_image: &mut image::RgbImage) {
@@ -148,9 +167,6 @@ fn tramage_aleatoire(rgb_image: &mut image::RgbImage) {
             *pixel = BLACK;
         }
     }
-    rgb_image
-        .save_with_format("./output/output_tramage_aleatoire.png", image::ImageFormat::Png)
-        .unwrap();
 }
 
 fn genere_matrice_bayer(ordre: u32) -> Vec<Vec<u32>> {
@@ -189,9 +205,6 @@ fn apply_matrice_bayer(rgb_image: &mut image::RgbImage, ordre: u32) {
             *pixel = BLACK;
         }
     }
-    rgb_image
-        .save_with_format("./output/output_tramage_bayer.png", image::ImageFormat::Png)
-        .unwrap();
 }
 
 fn diffusion_erreur_monochrome(rgb_image: &mut image::RgbImage) {
@@ -221,10 +234,6 @@ fn diffusion_erreur_monochrome(rgb_image: &mut image::RgbImage) {
             }
         }
     }
-
-    rgb_image
-        .save_with_format("./output/output_diffusion_erreur.png", image::ImageFormat::Png)
-        .unwrap();
 }
 
 fn diffusion_erreur_palette(rgb_image: &mut image::RgbImage, palette: Vec<image::Rgb<u8>>) {
@@ -275,9 +284,6 @@ fn diffusion_erreur_palette(rgb_image: &mut image::RgbImage, palette: Vec<image:
             }
         }
     }
-    rgb_image
-        .save_with_format("./output/output_diffusion_erreur_palette.png", image::ImageFormat::Png)
-        .unwrap();
 }
 
 fn diffusion_erreur_floyd_steinberg(rgb_image: &mut image::RgbImage) {
@@ -313,98 +319,65 @@ fn diffusion_erreur_floyd_steinberg(rgb_image: &mut image::RgbImage) {
             }
         }
     }
+}
 
-    rgb_image
-        .save_with_format("./output/output_floyd_steinberg.png", image::ImageFormat::Png)
-        .unwrap();
+fn parse_couleur(couleur: &str) -> Option<image::Rgb<u8>> {
+    match couleur.to_uppercase().as_str() {
+        "BLACK" => Some(BLACK),
+        "WHITE" => Some(WHITE),
+        "RED" => Some(RED),
+        "GREEN" => Some(GREEN),
+        "BLUE" => Some(BLUE),
+        "YELLOW" => Some(YELLOW),
+        "CYAN" => Some(CYAN),
+        "MAGENTA" => Some(MAGENTA),
+        "GREY" => Some(GREY),
+        _ => None,
+    }
 }
 
 fn main() -> Result<(), ImageError> {
     let args: DitherArgs = argh::from_env();
+
     let path_in = args.input;
-    let img: DynamicImage = ImageReader::open(path_in)?.decode()?;
-    let rgb_image = img.to_rgb8();
-
-    // Coordonnées du pixel (32, 52)
-    let x = 32;
-    let y = 52;
-
-    // Vérifie si les coordonnées sont valides
-    if x < rgb_image.width() && y < rgb_image.height() {
-        // Récupère la couleur du pixel
-        let pixel = rgb_image.get_pixel(x, y);
-        println!("La couleur du pixel ({}, {}) est : {:?}", x, y, pixel);
-    } else {
-        println!(
-            "Coordonnées ({}, {}) hors de l'image (dimensions : {}x{}).",
-            x,
-            y,
-            rgb_image.width(),
-            rgb_image.height()
-        );
-    }
-
-    white_pixel_1_out_of_2(&mut rgb_image.clone());
-
-    tramage_aleatoire(&mut rgb_image.clone());
-
-    diffusion_erreur_monochrome(&mut rgb_image.clone());
-
-    let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, BLUE, GREEN];
-    diffusion_erreur_palette(&mut rgb_image.clone(), palette);
-
-    diffusion_erreur_floyd_steinberg(&mut rgb_image.clone());
-
-    rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
+    let mut img: DynamicImage = ImageReader::open(path_in)?.decode()?;
+    let mut rgb_image = img.to_rgb8();
+    
+    let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA];
 
     match args.mode {
-        Mode::Seuil(_) => {
-            let opts = match args.mode {
-                Mode::Seuil(opts) => opts,
-                _ => unreachable!()
-            };
-            let mut couleur1 = WHITE;
-            match opts.couleur1.as_str() {
-                "BLACK" => couleur1 = BLACK,
-                "WHITE" => couleur1 = WHITE,
-                "RED" => couleur1 = RED,
-                "GREEN" => couleur1 = GREEN,
-                "BLUE" => couleur1 = BLUE,
-                "YELLOW" => couleur1 = YELLOW,
-                "CYAN" => couleur1 = CYAN,
-                "MAGENTA" => couleur1 = MAGENTA,
-                "GREY" => couleur1 = GREY,
-                _ => couleur1 = WHITE,
-            }    
-            let mut couleur2 = BLACK;
-            match opts.couleur2.as_str() {
-                "BLACK" => couleur2 = BLACK,
-                "WHITE" => couleur2 = WHITE,
-                "RED" => couleur2 = RED,
-                "GREEN" => couleur2 = GREEN,
-                "BLUE" => couleur2 = BLUE,
-                "YELLOW" => couleur2 = YELLOW,
-                "CYAN" => couleur2 = CYAN,
-                "MAGENTA" => couleur2 = MAGENTA,
-                "GREY" => couleur2 = GREY,
-                _ => couleur2 = BLACK,
-            }
-
-            apply_threshold_seuillage(&mut rgb_image.clone(), couleur1, couleur2);
+        Mode::Seuil(opts) => {
+            let seuil = opts.seuil.unwrap_or(127.5);
+            let couleur1 = parse_couleur(&opts.couleur1).unwrap_or(WHITE);
+            let couleur2 = parse_couleur(&opts.couleur2).unwrap_or(BLACK);
+            apply_threshold_seuillage(&mut rgb_image, couleur1, couleur2);
         }
         Mode::Palette(opts) => {
             if opts.n_couleurs == 0 {
-                println!("Le nombre de couleurs doit être supérieur à 0.");
+                println!("Erreur : Le nombre de couleurs doit être supérieur à 0.");
                 return Ok(());
             }
-
-            let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA];
-            apply_distance_eucli(&mut rgb_image.clone(), palette[..opts.n_couleurs].to_vec());
+            apply_distance_eucli(&mut rgb_image, palette[..opts.n_couleurs].to_vec());
         }
         Mode::Bayer(opts) => {
-            apply_matrice_bayer(&mut rgb_image.clone(), opts.ordre);
+            apply_matrice_bayer(&mut rgb_image, opts.ordre);
+        }
+        Mode::DiffusionErreurMonochrome(_) => {
+            diffusion_erreur_monochrome(&mut rgb_image);
+        }
+        Mode::DiffusionErreurPalette(_) => {
+            let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA];
+            diffusion_erreur_palette(&mut rgb_image, palette);
+        }
+        Mode::DiffusionErreurFloydSteinberg(_) => {
+            diffusion_erreur_floyd_steinberg(&mut rgb_image);
         }
     }
 
+    let output_path = args.output.unwrap_or_else(|| "./output/out.png".to_string());
+    rgb_image.save_with_format(&output_path, image::ImageFormat::Png)?;
+
+    println!("Traitement terminé. Résultat enregistré dans {}", output_path);
     Ok(())
 }
+
