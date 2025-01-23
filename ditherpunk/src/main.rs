@@ -21,14 +21,25 @@ struct DitherArgs {
 #[argh(subcommand)]
 enum Mode {
     Seuil(OptsSeuil),
-    Palette(OptsPalette),
-    Couleurs(OptsCouleurs)
+    Palette(OptsPalette)
 }
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
 #[argh(subcommand, name="seuil")]
 /// Rendu de l’image par seuillage monochrome.
-struct OptsSeuil {}
+struct OptsSeuil {
+    /// seuil de luminance pour le seuillage
+    #[argh(option)]
+    seuil: Option<f32>,
+
+    /// couleur pour les pixels dont la luminance est supérieure au seuil
+    #[argh(option)]
+    couleur1: String,
+
+    /// couleur pour les pixels dont la luminance est inférieure ou égale au seuil
+    #[argh(option)]
+    couleur2: String
+}
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
 #[argh(subcommand, name="palette")]
@@ -40,15 +51,6 @@ struct OptsPalette {
     n_couleurs: usize
 }
 
-#[derive(Debug, Clone, PartialEq, FromArgs)]
-#[argh(subcommand, name="couleurs")]
-/// Options for rendering the image with a specific list of colors.
-struct OptsCouleurs {
-    /// la liste des couleurs à utiliser, séparées par des virgules
-    #[argh(option)]
-    couleurs: String
-}
-
 const WHITE: image::Rgb<u8> = image::Rgb([255, 255, 255]);
 const GREY: image::Rgb<u8> = image::Rgb([127, 127, 127]);
 const BLACK: image::Rgb<u8> = image::Rgb([0, 0, 0]);
@@ -58,6 +60,37 @@ const GREEN: image::Rgb<u8> = image::Rgb([0, 255, 0]);
 const YELLOW: image::Rgb<u8> = image::Rgb([255, 255, 0]);
 const MAGENTA: image::Rgb<u8> = image::Rgb([255, 0, 255]);
 const CYAN: image::Rgb<u8> = image::Rgb([0, 255, 255]);
+
+fn distance_eucli_btw_colors(c1: image::Rgb<u8>, c2: image::Rgb<u8>) -> f64 {
+    let r1 = c1[0] as f64;
+    let g1 = c1[1] as f64;
+    let b1 = c1[2] as f64;
+
+    let r2 = c2[0] as f64;
+    let g2 = c2[1] as f64;
+    let b2 = c2[2] as f64;
+
+    ((r1 - r2).powi(2) + (g1 - g2).powi(2) + (b1 - b2).powi(2)).sqrt()
+}
+
+fn apply_distance_eucli(rgb_image: &mut image::RgbImage, palette: Vec<image::Rgb<u8>>) {
+    for (_x, _y, pixel) in rgb_image.enumerate_pixels_mut() {
+        let mut min_distance = f64::MAX;
+        let mut closest_color = palette[0];
+
+        for color in &palette {
+            let distance = distance_eucli_btw_colors(*pixel, *color);
+            if distance < min_distance {
+                min_distance = distance;
+                closest_color = *color;
+            }
+        }
+        *pixel = closest_color;
+    }
+    rgb_image
+        .save_with_format("./output/output_palette.png", image::ImageFormat::Png)
+        .unwrap();
+}
 
 fn white_pixel_1_out_of_2(rgb_image: &mut image::RgbImage) {
     for (x, _, pixel) in rgb_image.enumerate_pixels_mut() {
@@ -124,30 +157,51 @@ fn main() -> Result<(), ImageError> {
     //on sauvegarde l'image modifiée
     rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
 
-    // Appliquer le traitement de seuillage
-    if let Mode::Couleurs(opts) = args.mode {
-        let couleurs = opts.couleurs.split(",").collect::<Vec<&str>>();
-        let mut couleurs_rgb = Vec::new();
-        for couleur in couleurs {
-            match couleur {
-                "BLACK" => couleurs_rgb.push(BLACK),
-                "WHITE" => couleurs_rgb.push(WHITE),
-                "RED" => couleurs_rgb.push(RED),
-                "GREEN" => couleurs_rgb.push(GREEN),
-                "BLUE" => couleurs_rgb.push(BLUE),
-                "YELLOW" => couleurs_rgb.push(YELLOW),
-                "CYAN" => couleurs_rgb.push(CYAN),
-                "MAGENTA" => couleurs_rgb.push(MAGENTA),
-                _ => couleurs_rgb.push(GREY),
+    match args.mode {
+        Mode::Seuil(_) => {
+            let opts = match args.mode {
+                Mode::Seuil(opts) => opts,
+                _ => unreachable!()
+            };
+            let mut couleur1 = WHITE;
+            match opts.couleur1.as_str() {
+                "BLACK" => couleur1 = BLACK,
+                "WHITE" => couleur1 = WHITE,
+                "RED" => couleur1 = RED,
+                "GREEN" => couleur1 = GREEN,
+                "BLUE" => couleur1 = BLUE,
+                "YELLOW" => couleur1 = YELLOW,
+                "CYAN" => couleur1 = CYAN,
+                "MAGENTA" => couleur1 = MAGENTA,
+                "GREY" => couleur1 = GREY,
+                _ => couleur1 = WHITE,
+            }    
+            let mut couleur2 = BLACK;
+            match opts.couleur2.as_str() {
+                "BLACK" => couleur2 = BLACK,
+                "WHITE" => couleur2 = WHITE,
+                "RED" => couleur2 = RED,
+                "GREEN" => couleur2 = GREEN,
+                "BLUE" => couleur2 = BLUE,
+                "YELLOW" => couleur2 = YELLOW,
+                "CYAN" => couleur2 = CYAN,
+                "MAGENTA" => couleur2 = MAGENTA,
+                "GREY" => couleur2 = GREY,
+                _ => couleur2 = BLACK,
             }
-        }
-        apply_threshold_seuillage(&mut rgb_image.clone(), couleurs_rgb[0], couleurs_rgb[1]);
-    } else {
-        apply_threshold_seuillage(&mut rgb_image.clone(), BLACK, WHITE);
-    }
 
-    // Sauvegarder l'image traitée
-    // rgb_image.save_with_format("./output/output_monochrome.png", image::ImageFormat::Png)?;
+            apply_threshold_seuillage(&mut rgb_image.clone(), couleur1, couleur2);
+        }
+        Mode::Palette(opts) => {
+            if (opts.n_couleurs == 0) {
+                println!("Le nombre de couleurs doit être supérieur à 0.");
+                return Ok(());
+            }
+
+            let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA];
+            apply_distance_eucli(&mut rgb_image.clone(), palette[..opts.n_couleurs].to_vec());
+        }
+    }
 
     Ok(())
 }
