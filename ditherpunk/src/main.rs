@@ -12,32 +12,42 @@ struct DitherArgs {
     /// le fichier de sortie (optionnel)
     #[argh(positional)]
     output: Option<String>,
-    // /// le mode d’opération
-    // #[argh(subcommand)]
-    // mode: Mode
+    /// le mode d’opération
+    #[argh(subcommand)]
+    mode: Mode
 }
 
-// #[derive(Debug, Clone, PartialEq, FromArgs)]
-// #[argh(subcommand)]
-// enum Mode {
-//     Seuil(OptsSeuil),
-//     Palette(OptsPalette),
-// }
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand)]
+enum Mode {
+    Seuil(OptsSeuil),
+    Palette(OptsPalette),
+    Couleurs(OptsCouleurs)
+}
 
-// #[derive(Debug, Clone, PartialEq, FromArgs)]
-// #[argh(subcommand, name="seuil")]
-// /// Rendu de l’image par seuillage monochrome.
-// struct OptsSeuil {}
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="seuil")]
+/// Rendu de l’image par seuillage monochrome.
+struct OptsSeuil {}
 
-// #[derive(Debug, Clone, PartialEq, FromArgs)]
-// #[argh(subcommand, name="palette")]
-// /// Rendu de l’image avec une palette contenant un nombre limité de couleurs
-// struct OptsPalette {
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="palette")]
+/// Rendu de l’image avec une palette contenant un nombre limité de couleurs
+struct OptsPalette {
 
-//     /// le nombre de couleurs à utiliser, dans la liste [NOIR, BLANC, ROUGE, VERT, BLEU, JAUNE, CYAN, MAGENTA]
-//     #[argh(option)]
-//     n_couleurs: usize
-// }
+    /// le nombre de couleurs à utiliser, dans la liste [NOIR, BLANC, ROUGE, VERT, BLEU, JAUNE, CYAN, MAGENTA]
+    #[argh(option)]
+    n_couleurs: usize
+}
+
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="couleurs")]
+/// Options for rendering the image with a specific list of colors.
+struct OptsCouleurs {
+    /// la liste des couleurs à utiliser, séparées par des virgules
+    #[argh(option)]
+    couleurs: String
+}
 
 const WHITE: image::Rgb<u8> = image::Rgb([255, 255, 255]);
 const GREY: image::Rgb<u8> = image::Rgb([127, 127, 127]);
@@ -68,14 +78,14 @@ fn get_luminance(pixel: &image::Rgb<u8>) -> f32 {
     0.2126f32 * r + 0.7152f32 * g + 0.0722f32 * b
 }
 
-fn apply_threshold_seuillage(rgb_image: &mut image::RgbImage) {
-    for (x, y, pixel) in rgb_image.enumerate_pixels_mut() {
+fn apply_threshold_seuillage(rgb_image: &mut image::RgbImage, couleur1: image::Rgb<u8>, couleur2: image::Rgb<u8>) {
+    for (_x, _y, pixel) in rgb_image.enumerate_pixels_mut() {
         let luminance = get_luminance(pixel);
 
         if luminance > 127.5 {
-            *pixel = WHITE;
+            *pixel = couleur1;
         } else {
-            *pixel = BLACK;
+            *pixel = couleur2;
         }
     }
     rgb_image
@@ -115,7 +125,26 @@ fn main() -> Result<(), ImageError> {
     rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
 
     // Appliquer le traitement de seuillage
-    apply_threshold_seuillage(&mut rgb_image.clone());
+    if let Mode::Couleurs(opts) = args.mode {
+        let couleurs = opts.couleurs.split(",").collect::<Vec<&str>>();
+        let mut couleurs_rgb = Vec::new();
+        for couleur in couleurs {
+            match couleur {
+                "BLACK" => couleurs_rgb.push(BLACK),
+                "WHITE" => couleurs_rgb.push(WHITE),
+                "RED" => couleurs_rgb.push(RED),
+                "GREEN" => couleurs_rgb.push(GREEN),
+                "BLUE" => couleurs_rgb.push(BLUE),
+                "YELLOW" => couleurs_rgb.push(YELLOW),
+                "CYAN" => couleurs_rgb.push(CYAN),
+                "MAGENTA" => couleurs_rgb.push(MAGENTA),
+                _ => couleurs_rgb.push(GREY),
+            }
+        }
+        apply_threshold_seuillage(&mut rgb_image.clone(), couleurs_rgb[0], couleurs_rgb[1]);
+    } else {
+        apply_threshold_seuillage(&mut rgb_image.clone(), BLACK, WHITE);
+    }
 
     // Sauvegarder l'image traitée
     // rgb_image.save_with_format("./output/output_monochrome.png", image::ImageFormat::Png)?;

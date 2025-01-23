@@ -56,3 +56,26 @@ La couleur du pixel (32, 52) est : Rgb([8, 8, 8]).
 *Passer un pixel sur deux d’une image en blanc. Est-ce que l’image obtenue est reconnaissable?*
 
 Oui, l'image est reconnaissable : ![img 1sur2](./ditherpunk/output/1_pixel_blanc_sur_2.png)
+
+## Question 6
+
+D'apres [nos recherches](https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color) la formule pour caluler la luminosité d'un pixel est :
+
+```rust
+(0.2126*R + 0.7152*G + 0.0722*B)
+```
+
+## Question 7
+
+Voici le resultat :
+
+![image monochrome](./ditherpunk/output/output_monochrome.png)
+
+## Exercice 8
+
+Nous pouvons lancer le traitement monochrome avec des couleurs de notre choix avec la commande suivante:
+
+```bash
+cargo run ./img/image_iut.jpg -- couleurs --couleurs "WHITE,BLUE"
+# Le nom des couleurs doit être en majuscule et en anglais (BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA, GREY)
+```
