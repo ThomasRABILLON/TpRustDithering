@@ -105,6 +105,10 @@ cargo run ./img/image_iut.jpg -- palette --n-couleurs 8
 Nous obtenons le résultat suivant : ![image_palette](./ditherpunk/output/output_palette.png)
 
 ## Question 11
+
+Si la palette est vide, le programme envoie un message indiquant que la palette ne doit pas être vide et ne fait rien
+
+## Question 12
 *Implémenter le tramage aléatoire des images*
 
 Nous avons implémenter le tramage aléatoire de la manière suivante :
@@ -125,3 +129,16 @@ fn tramage_aleatoire(rgb_image: &mut image::RgbImage) {
         .unwrap();
 }
 ```
+
+## Question 14
+*Quel type de données utiliser pour représenter la matrice de Bayer?*
+
+Pour représenter la matrice de Bayer on peut utiliser un vecteur de vecteur d'entier.
+```rust
+Vec<Vec<u32>>
+```
+
+## Question 15
+
+Avec la commande suivante, `cargo run ./img/image_iut.jpg -- bayer --ordre 4`, nous obtenons le résultat suivant :
+![image_bayer](./ditherpunk/output/output_tramage_bayer.png)

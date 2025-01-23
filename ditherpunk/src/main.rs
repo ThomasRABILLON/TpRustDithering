@@ -22,7 +22,8 @@ struct DitherArgs {
 #[argh(subcommand)]
 enum Mode {
     Seuil(OptsSeuil),
-    Palette(OptsPalette)
+    Palette(OptsPalette),
+    Bayer(OptsBayer)
 }
 
 #[derive(Debug, Clone, PartialEq, FromArgs)]
@@ -50,6 +51,15 @@ struct OptsPalette {
     /// le nombre de couleurs à utiliser, dans la liste [NOIR, BLANC, ROUGE, VERT, BLEU, JAUNE, CYAN, MAGENTA]
     #[argh(option)]
     n_couleurs: usize
+}
+
+#[derive(Debug, Clone, PartialEq, FromArgs)]
+#[argh(subcommand, name="bayer")]
+/// Rendu de l’image par tramage ordonné de Bayer.
+struct OptsBayer {
+    /// ordre de la matrice de Bayer
+    #[argh(option)]
+    ordre: u32
 }
 
 const WHITE: image::Rgb<u8> = image::Rgb([255, 255, 255]);
@@ -143,6 +153,47 @@ fn tramage_aleatoire(rgb_image: &mut image::RgbImage) {
         .unwrap();
 }
 
+fn genere_matrice_bayer(ordre: u32) -> Vec<Vec<u32>> {
+    if ordre == 0 {
+        return vec![vec![0]];
+    }
+
+    let matrice_prec = genere_matrice_bayer(ordre - 1);
+    let size = matrice_prec.len();
+    let new_size = size * 2;
+    let mut matrice = vec![vec![0; new_size]; new_size];
+
+    for i in 0..size {
+        for j in 0..size {
+            let base_value = matrice_prec[i][j];
+            matrice[i][j] = base_value * 4;
+            matrice[i + size][j] = base_value * 4 + 2;
+            matrice[i][j + size] = base_value * 4 + 3;
+            matrice[i + size][j + size] = base_value * 4 + 1;
+        }
+    }
+
+    matrice
+}
+
+fn apply_matrice_bayer(rgb_image: &mut image::RgbImage, ordre: u32) {
+    let matrice = genere_matrice_bayer(ordre);
+    let size = matrice.len() as u32;
+    for (x, y, pixel) in rgb_image.enumerate_pixels_mut() {
+        let i = x % size;
+        let j = y % size;
+        let seuil = matrice[i as usize][j as usize] * 255 / (size * size);
+        if get_luminance(pixel) > seuil as f32 {
+            *pixel = WHITE;
+        } else {
+            *pixel = BLACK;
+        }
+    }
+    rgb_image
+        .save_with_format("./output/output_tramage_bayer.png", image::ImageFormat::Png)
+        .unwrap();
+}
+
 fn main() -> Result<(), ImageError> {
     let args: DitherArgs = argh::from_env();
     let path_in = args.input;
@@ -168,10 +219,10 @@ fn main() -> Result<(), ImageError> {
         );
     }
 
-    //on boucle sur chaque pixel de l'image
     white_pixel_1_out_of_2(&mut rgb_image.clone());
 
-    //on sauvegarde l'image modifiée
+    tramage_aleatoire(&mut rgb_image.clone());
+
     rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
 
     match args.mode {
@@ -210,7 +261,7 @@ fn main() -> Result<(), ImageError> {
             apply_threshold_seuillage(&mut rgb_image.clone(), couleur1, couleur2);
         }
         Mode::Palette(opts) => {
-            if (opts.n_couleurs == 0) {
+            if opts.n_couleurs == 0 {
                 println!("Le nombre de couleurs doit être supérieur à 0.");
                 return Ok(());
             }
@@ -218,9 +269,10 @@ fn main() -> Result<(), ImageError> {
             let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, GREEN, BLUE, YELLOW, CYAN, MAGENTA];
             apply_distance_eucli(&mut rgb_image.clone(), palette[..opts.n_couleurs].to_vec());
         }
+        Mode::Bayer(opts) => {
+            apply_matrice_bayer(&mut rgb_image.clone(), opts.ordre);
+        }
     }
-
-    tramage_aleatoire(&mut rgb_image.clone());
 
     Ok(())
 }
