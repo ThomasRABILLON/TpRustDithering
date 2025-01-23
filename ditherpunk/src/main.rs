@@ -194,6 +194,131 @@ fn apply_matrice_bayer(rgb_image: &mut image::RgbImage, ordre: u32) {
         .unwrap();
 }
 
+fn diffusion_erreur_monochrome(rgb_image: &mut image::RgbImage) {
+    let mut erreur_image = vec![vec![0.0; rgb_image.width() as usize]; rgb_image.height() as usize];
+
+    for y in 0..rgb_image.height() {
+        for x in 0..rgb_image.width() {
+            let pixel = rgb_image.get_pixel_mut(x, y);
+            let luminance = get_luminance(pixel) / 255.0;
+
+            let nouvelle_couleur = if luminance + erreur_image[y as usize][x as usize] > 0.5 {
+                *pixel = WHITE;
+                1.0
+            } else {
+                *pixel = BLACK;
+                0.0
+            };
+
+            let erreur = luminance + erreur_image[y as usize][x as usize] - nouvelle_couleur;
+
+            if x + 1 < rgb_image.width() {
+                erreur_image[y as usize][(x + 1) as usize] += erreur * 0.5;
+            }
+
+            if y + 1 < rgb_image.height() {
+                erreur_image[(y + 1) as usize][x as usize] += erreur * 0.5;
+            }
+        }
+    }
+
+    rgb_image
+        .save_with_format("./output/output_diffusion_erreur.png", image::ImageFormat::Png)
+        .unwrap();
+}
+
+fn diffusion_erreur_palette(rgb_image: &mut image::RgbImage, palette: Vec<image::Rgb<u8>>) {
+    let mut erreur_image = vec![vec![[0.0; 3]; rgb_image.width() as usize]; rgb_image.height() as usize];
+
+    for y in 0..rgb_image.height() {
+        for x in 0..rgb_image.width() {
+            let pixel = rgb_image.get_pixel_mut(x, y);
+            let original_color = [
+                pixel[0] as f32 + erreur_image[y as usize][x as usize][0],
+                pixel[1] as f32 + erreur_image[y as usize][x as usize][1],
+                pixel[2] as f32 + erreur_image[y as usize][x as usize][2],
+            ];
+
+            let mut closest_color = palette[0];
+            let mut min_distance = f64::MAX;
+
+            for &color in &palette {
+                let distance = distance_eucli_btw_colors(
+                    image::Rgb([original_color[0] as u8, original_color[1] as u8, original_color[2] as u8]),
+                    color,
+                );
+
+                if distance < min_distance {
+                    min_distance = distance;
+                    closest_color = color;
+                }
+            }
+
+            *pixel = closest_color;
+
+            let erreur = [
+                original_color[0] - closest_color[0] as f32,
+                original_color[1] - closest_color[1] as f32,
+                original_color[2] - closest_color[2] as f32,
+            ];
+
+            if x + 1 < rgb_image.width() {
+                for c in 0..3 {
+                    erreur_image[y as usize][(x + 1) as usize][c] += erreur[c] * 0.5;
+                }
+            }
+
+            if y + 1 < rgb_image.height() {
+                for c in 0..3 {
+                    erreur_image[(y + 1) as usize][x as usize][c] += erreur[c] * 0.5;
+                }
+            }
+        }
+    }
+    rgb_image
+        .save_with_format("./output/output_diffusion_erreur_palette.png", image::ImageFormat::Png)
+        .unwrap();
+}
+
+fn diffusion_erreur_floyd_steinberg(rgb_image: &mut image::RgbImage) {
+    let mut erreur_image = vec![vec![0.0; rgb_image.width() as usize]; rgb_image.height() as usize];
+
+    for y in 0..rgb_image.height() {
+        for x in 0..rgb_image.width() {
+            let pixel = rgb_image.get_pixel_mut(x, y);
+            let luminance = get_luminance(pixel) / 255.0 + erreur_image[y as usize][x as usize];
+
+            let nouvelle_couleur = if luminance > 0.5 {
+                *pixel = WHITE;
+                1.0
+            } else {
+                *pixel = BLACK;
+                0.0
+            };
+
+            let erreur = luminance - nouvelle_couleur;
+
+            if x + 1 < rgb_image.width() {
+                erreur_image[y as usize][(x + 1) as usize] += erreur * 7.0 / 16.0;
+            }
+
+            if y + 1 < rgb_image.height() {
+                if x > 0 {
+                    erreur_image[(y + 1) as usize][(x - 1) as usize] += erreur * 3.0 / 16.0;
+                }
+                erreur_image[(y + 1) as usize][x as usize] += erreur * 5.0 / 16.0;
+                if x + 1 < rgb_image.width() {
+                    erreur_image[(y + 1) as usize][(x + 1) as usize] += erreur * 1.0 / 16.0;
+                }
+            }
+        }
+    }
+
+    rgb_image
+        .save_with_format("./output/output_floyd_steinberg.png", image::ImageFormat::Png)
+        .unwrap();
+}
+
 fn main() -> Result<(), ImageError> {
     let args: DitherArgs = argh::from_env();
     let path_in = args.input;
@@ -222,6 +347,13 @@ fn main() -> Result<(), ImageError> {
     white_pixel_1_out_of_2(&mut rgb_image.clone());
 
     tramage_aleatoire(&mut rgb_image.clone());
+
+    diffusion_erreur_monochrome(&mut rgb_image.clone());
+
+    let palette: Vec<image::Rgb<u8>> = vec![BLACK, WHITE, RED, BLUE, GREEN];
+    diffusion_erreur_palette(&mut rgb_image.clone(), palette);
+
+    diffusion_erreur_floyd_steinberg(&mut rgb_image.clone());
 
     rgb_image.save_with_format("./output/output.png", image::ImageFormat::Png)?;
 

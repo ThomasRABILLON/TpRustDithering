@@ -102,7 +102,9 @@ Avec la commande suivante :
 cargo run ./img/image_iut.jpg -- palette --n-couleurs 8
 ```
 
-Nous obtenons le résultat suivant : ![image_palette](./ditherpunk/output/output_palette.png)
+Nous obtenons le résultat suivant : 
+
+![image_palette](./ditherpunk/output/question10.png)
 
 ## Question 11
 
@@ -141,4 +143,53 @@ Vec<Vec<u32>>
 ## Question 15
 
 Avec la commande suivante, `cargo run ./img/image_iut.jpg -- bayer --ordre 4`, nous obtenons le résultat suivant :
-![image_bayer](./ditherpunk/output/output_tramage_bayer.png)
+
+![image_bayer](./ditherpunk/output/question15.png)
+
+## Question 16
+
+Après avoir implémenter la diffusion d'erreur, voici ce que nous obtenons :
+
+![diffusion erreur](./ditherpunk/output/question16.png)
+
+## Question 17
+
+### Représentation de l'erreur avec une palette de couleurs
+
+Lorsque l'on travaille avec une palette de couleurs, chaque pixel est représenté par une couleur composée de trois canaux : Rouge (R), Vert (G) et Bleu (B). Contrairement au noir et blanc, où l'erreur est une valeur scalaire (la différence de luminosité), ici l'erreur est un **vecteur à trois dimensions**.
+
+#### Calcul de l'erreur
+L'erreur est calculée pour chaque canal de couleur séparément :
+- Si \( C_{\text{réel}} = (R, G, B) \) est la couleur réelle d'un pixel.
+- Et \( C_{\text{approché}} = (R', G', B') \) est la couleur de la palette choisie pour ce pixel.  
+
+Alors l'erreur est définie comme :
+\[
+\text{Erreur} = (R - R', G - G', B - B')
+\]
+Chaque composante de ce vecteur représente l'écart entre la couleur réelle et la couleur choisie dans la palette pour les canaux Rouge, Vert et Bleu.
+
+#### Diffusion de l'erreur
+L'erreur est ensuite répartie sur les pixels voisins qui n'ont pas encore été traités. La diffusion suit une matrice prédéfinie, où chaque pixel voisin reçoit une fraction de l'erreur.
+
+Par exemple, pour la matrice :
+```
+  *   0.5
+0.5   0
+```
+- \( * \) représente le pixel en cours de traitement.
+- \( 0.5 \) signifie que **50% de l'erreur** est ajoutée au pixel de droite et **50% de l'erreur** au pixel en dessous.
+
+Pour chaque pixel voisin, on additionne l'erreur diffusée pour chaque canal (R, G, B) avant de calculer sa propre couleur approximée.
+
+## Question 18
+
+Nous avons implémenter la diffusion d'erreur pour la palettisation d'images. Pour ce la nous avons réutiliser notre algorithme de la distance euclidienne entre deux couleurs. Voici ce que nous obtenons :
+
+![diffusion erreur palette](./ditherpunk/output/question18.png)
+
+## Question 19
+
+Après avoir implémenter la diffusion d'erreur avec la matrice de Floyd-Steinberg, voici le résultat obtenu :
+
+![diffusion erreur floyd-steinberg](./ditherpunk/output/question19.png)
