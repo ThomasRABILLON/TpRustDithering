@@ -193,3 +193,7 @@ Nous avons implémenter la diffusion d'erreur pour la palettisation d'images. Po
 Après avoir implémenter la diffusion d'erreur avec la matrice de Floyd-Steinberg, voici le résultat obtenu :
 
 ![diffusion erreur floyd-steinberg](./ditherpunk/output/question19.png)
+
+## Question 22
+
+Le type Rust correspondant à une sélection d’options fournies par l’utilisateur est, en reprenant le squelette qui nous était donnée, `DitherArgs` qui dérive le type `FromArgs` de la bibliothèque `args`
