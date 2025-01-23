@@ -105,6 +105,7 @@ cargo run ./img/image_iut.jpg -- palette --n-couleurs 8
 Nous obtenons le résultat suivant : ![image_palette](./ditherpunk/output/output_palette.png)
 
 ## Question 11
+*Implémenter le tramage aléatoire des images*
 
 Nous avons implémenter le tramage aléatoire de la manière suivante :
 ```rust
